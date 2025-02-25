@@ -1,5 +1,35 @@
 const dataExtraction = require('./dataExtraction');
 const axios = require('axios');
+require("dotenv").config();
+
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+
+const axiosInstance = axios.create({
+    timeout: 10000,  // Increase timeout to 10 seconds
+    family: 4        // Force IPv4 instead of IPv6
+});
+
+async function getCoordinates(address) {
+    try {
+        const response = await axiosInstance.get("https://maps.googleapis.com/maps/api/geocode/json", {
+            params: {
+                address: address,
+                key: GOOGLE_API_KEY
+            }
+        });
+
+        if (response.data.status === "OK") {
+            const location = response.data.results[0].geometry.location;
+            return [location.lat, location.lng];
+        } else {
+            console.error(`Geocoding failed for ${address}: ${response.data.status}`);
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error fetching coordinates for address: ${address}`, error.message);
+        return null;
+    }
+}
 
 
 exports.getAllOrders = async (req, res) => {
@@ -25,38 +55,30 @@ exports.getOrdersForDelivery = async (req, res) => {
     try {
         const { status } = req.params;
         const allOrders = await dataExtraction.getAllOrders();
-        const coordinates = [
-            [42.6977, 23.3219], // Sofia City Center
-            [42.6511, 23.3793], // Lyulin District
-            [42.6895, 23.3321], // NDK (National Palace of Culture)
-            [42.6675, 23.3516],
-            [42.7111, 23.3247],
-            [42.6745, 23.2861],
-            [42.6567, 23.2705],
-            [42.6833, 23.3167],
-            [42.6951, 23.3307],
-            [42.6804, 23.3197],
-            [42.7022, 23.3105],
-            [42.6615, 23.2897],
-            [42.7198, 23.3462],
-            [42.6789, 23.3644],
-            [42.6903, 23.2789],
-            [42.7057, 23.3361],
-            [42.6731, 23.3074],
-            [42.6882, 23.2902],
-            [42.6589, 23.3591],
-            [42.7123, 23.3658]
-        ];
+
+        // Extract addresses
         const filteredOrders = allOrders
             .filter(order => order.orderStatus === "for deployment")
-            .map(order => ({
-                senderAddress: order.senderAddress,
-            }));
+            .map(order => order.senderAddress);
 
         if (filteredOrders.length === 0) {
             return res.status(400).json({ error: "No valid orders for deployment" });
         }
-        const axiosResponse = await axios.post("http://127.0.0.1:5000/process-orders", coordinates);
+
+        // Convert addresses to coordinates
+        const coordinates = await Promise.all(
+            filteredOrders.map(async (address) => await getCoordinates(address))
+        );
+
+        // Filter out any failed conversions
+        const validCoordinates = coordinates.filter(coord => coord !== null);
+
+        if (validCoordinates.length === 0) {
+            return res.status(400).json({ error: "Failed to retrieve any valid coordinates" });
+        }
+
+        // Send coordinates to Flask API
+        const axiosResponse = await axios.post("http://127.0.0.1:5000/process-orders", validCoordinates);
         res.status(200).json(axiosResponse.data);
     } catch (error) {
         res.status(500).json({ error: error.message });
