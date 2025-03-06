@@ -5,8 +5,8 @@ require("dotenv").config();
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 const axiosInstance = axios.create({
-    timeout: 10000,  // Increase timeout to 10 seconds
-    family: 4        // Force IPv4 instead of IPv6
+    timeout: 10000,  
+    family: 4        
 });
 
 async function getCoordinates(address) {
@@ -56,7 +56,6 @@ exports.getOrdersForDelivery = async (req, res) => {
         const { status } = req.params;
         const allOrders = await dataExtraction.getAllOrders();
 
-        // Extract addresses
         const filteredOrders = allOrders
             .filter(order => order.orderStatus === "for deployment")
             .map(order => order.senderAddress);
@@ -65,19 +64,16 @@ exports.getOrdersForDelivery = async (req, res) => {
             return res.status(400).json({ error: "No valid orders for deployment" });
         }
 
-        // Convert addresses to coordinates
         const coordinates = await Promise.all(
             filteredOrders.map(async (address) => await getCoordinates(address))
         );
 
-        // Filter out any failed conversions
         const validCoordinates = coordinates.filter(coord => coord !== null);
 
         if (validCoordinates.length === 0) {
             return res.status(400).json({ error: "Failed to retrieve any valid coordinates" });
         }
 
-        // Send coordinates to Flask API
         const axiosResponse = await axios.post("http://127.0.0.1:5000/process-orders", validCoordinates);
         res.status(200).json(axiosResponse.data);
     } catch (error) {
