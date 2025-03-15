@@ -2,8 +2,17 @@ from flask import Flask, request, jsonify
 import numpy as np
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import cdist
+from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
+
+load_dotenv()
+mongo_uri = os.getenv("MONGODB_URI")
+client = MongoClient(mongo_uri)
+db = client.get_database()
+users_collection = db["Users"] 
 
 @app.route('/process-orders', methods=['POST'])
 def process_orders():
@@ -38,8 +47,11 @@ def process_orders():
         # Define the office location
         office = np.array([[42.7000, 23.3200]])  # Example: Office in central Sofia
         
-        # Number of clusters (equal to the number of couriers)
-        num_clusters = 3
+        # Fetch the number of users with status = "available"
+        num_clusters = users_collection.count_documents({"status": "available"})
+        
+        # If no available users, default to 1 cluster
+        num_clusters = max(num_clusters, 1)
         
         # Compute distances from office for each location
         distances = cdist(locations, office, metric='euclidean').flatten()
