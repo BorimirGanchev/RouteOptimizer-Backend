@@ -67,6 +67,38 @@ app.put("/users/:id/status", async (req, res) => {
   }
 });
 
+app.put("/users/:id/ordersasaign", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { orders } = req.body;
+
+    console.log("🛠 Received User ID:", id);
+    console.log("Received Orders:", orders);
+
+    if (!orders || !Array.isArray(orders) || orders.length === 0) {
+      return res.status(400).json({ message: "Invalid or empty orders array" });
+    }
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      id,
+      { $push: { orders: { $each: orders } } },  
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      console.error("❌ User not found for ID:", id);
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log("✅ Orders assigned successfully:", updatedUser);
+    res.json({ message: "Orders assigned successfully", user: updatedUser });
+  } catch (error) {
+    console.error("❌ Error assigning orders:", error);
+    res.status(500).json({ message: "Error assigning orders", error });
+  }
+});
+
+
 
 app.get('/', (req, res) => {
     res.send('Welcome to the Route Optimizer Backend!');

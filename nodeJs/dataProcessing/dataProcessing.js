@@ -53,28 +53,40 @@ exports.getAllOrders = async (req, res) => {
 
 exports.getOrdersForDelivery = async (req, res) => {
     try {
-        const { status } = req.params;
         const allOrders = await dataExtraction.getAllOrders();
 
-        const filteredOrders = allOrders
-            .filter(order => order.orderStatus === "for deployment")
-            .map(order => order.senderAddress);
+        // Create a map of { orderId: senderAddress }
+        const orderAddressMap = {};
+        allOrders.forEach(order => {
+            if (order.orderStatus === "for deployment") {
+                orderAddressMap[order._id] = order.senderAddress;
+            }
+        });
 
-        if (filteredOrders.length === 0) {
+        if (Object.keys(orderAddressMap).length === 0) {
             return res.status(400).json({ error: "No valid orders for deployment" });
         }
 
-        const coordinates = await Promise.all(
-            filteredOrders.map(async (address) => await getCoordinates(address))
-        );
+        // Convert addresses to coordinates
+        const orderCoordinatesMap = {};
+        for (const [orderId, address] of Object.entries(orderAddressMap)) {
+            const coords = await getCoordinates(address);
+            if (coords) {
+                orderCoordinatesMap[orderId] = coords;
+            }
+        }
 
-        const validCoordinates = coordinates.filter(coord => coord !== null);
-
-        if (validCoordinates.length === 0) {
+        if (Object.keys(orderCoordinatesMap).length === 0) {
             return res.status(400).json({ error: "Failed to retrieve any valid coordinates" });
         }
 
-        const axiosResponse = await axios.post("http://127.0.0.1:5000/process-orders", validCoordinates);
+        // Send the map { orderId: coordinates } to Python
+        const axiosResponse = await axios.post(
+            "http://127.0.0.1:5000/process-orders",
+            orderCoordinatesMap
+        );
+
+        // Return the processed data from Python
         res.status(200).json(axiosResponse.data);
     } catch (error) {
         res.status(500).json({ error: error.message });
