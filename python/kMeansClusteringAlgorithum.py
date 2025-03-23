@@ -24,44 +24,33 @@ def process_orders():
         if not data:
             return jsonify({"error": "Received empty data"}), 400
 
-        print("Received data:", data)
-
         order_ids = list(data.keys())
         locations = list(data.values())
 
-        # Ensure locations are in a 2D format
         if not all(isinstance(coord, list) and len(coord) == 2 for coord in locations):
             return jsonify({"error": "XA must be a 2-dimensional array."}), 400
 
         locations = np.array(locations)
 
-        # Check if locations is empty
         if locations.shape[0] == 0 or locations.shape[1] != 2:
             return jsonify({"error": "Invalid locations format"}), 400
 
-        # Office location (Sofia)
         office = np.array([[42.7000, 23.3200]])
 
-        # Fetch available users
         num_clusters = users_collection.count_documents({"status": "available"})
         num_clusters = max(num_clusters, 1)
 
-        # Compute distances from office
         distances = cdist(locations, office, metric='euclidean').flatten()
 
-        # Define workload (normalize it)
         workload = (np.ones(len(locations)) + distances) / np.max(distances)
 
-        # Append workload as a feature
         locations_with_workload = np.hstack((locations, workload.reshape(-1, 1)))
 
-        # K-Means clustering
         kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)
         kmeans.fit(locations_with_workload)
 
         labels = kmeans.labels_
 
-        # Return { orderId: cluster }
         result_map = {order_ids[i]: int(labels[i]) for i in range(len(order_ids))}
         return jsonify(result_map)
 
