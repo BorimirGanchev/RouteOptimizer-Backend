@@ -82,7 +82,7 @@ exports.getOrdersForDelivery = async (req, res) => {
 
         // Send the map { orderId: coordinates } to Python
         const axiosResponse = await axios.post(
-            "http://127.0.0.1:5000/process-orders",
+            "http://kmeans-clustering:5000/process-orders",
             orderCoordinatesMap
         );
 
