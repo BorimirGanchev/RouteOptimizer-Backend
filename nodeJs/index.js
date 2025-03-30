@@ -25,7 +25,7 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Route Optimizer Backend!");
 });
 
-app.get("/user", async (req, res) => {
+app.get("/user",  async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ message: "Unauthorized" });
@@ -41,7 +41,7 @@ app.get("/user", async (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
+app.get("/users",  async (req, res) => {
   try {
     const users = await UserModel.find({ role: "user" }); 
     res.json(users);
@@ -50,7 +50,7 @@ app.get("/users", async (req, res) => {
   }
 });
 
-app.get("/users/:id/orders", async (req, res) => {
+app.get("/users/:id/orders",  async (req, res) => {
   try {
     const { id } = req.params;
     const user = await UserModel.findById(id);
@@ -67,7 +67,7 @@ app.get("/users/:id/orders", async (req, res) => {
   }
 });
 
-app.put("/users/:id/status", async (req, res) => {
+app.put("/users/:id/status",  async (req, res) => {
   try {
     const { status } = req.body;
     await UserModel.findByIdAndUpdate(req.params.id, { status });
@@ -78,7 +78,7 @@ app.put("/users/:id/status", async (req, res) => {
   }
 });
 
-app.get("/orders/:id", async (req, res) => {
+app.get("/orders/:id",  async (req, res) => {
   try {
     const { id } = req.params;
     const order = await OrderModel.findById(id);
@@ -94,7 +94,7 @@ app.get("/orders/:id", async (req, res) => {
   }
 });
 
-app.put("/orders/:orderId", async (req, res) => {
+app.put("/orders/:orderId",  async (req, res) => {
   try {
     const { orderId } = req.params;
     const { orderStatus } = req.body;
@@ -116,7 +116,7 @@ app.put("/orders/:orderId", async (req, res) => {
   }
 });
 
-app.put("/user/:userId/removeOrder", async (req, res) => {
+app.put("/user/:userId/removeOrder",  async (req, res) => {
   try {
     const { userId } = req.params;
     const { orderId } = req.body;
@@ -138,7 +138,7 @@ app.put("/user/:userId/removeOrder", async (req, res) => {
   }
 });
 
-app.put("/users/:id/ordersasaign", async (req, res) => {
+app.put("/users/:id/ordersasaign",  async (req, res) => {
   try {
     const { id } = req.params;
     const { orders } = req.body;
@@ -183,7 +183,7 @@ try {
     return res.status(400).json({ message: 'Invalid password' });
   }
 
-  const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, "your_jwt_secret", { expiresIn: "12h" });
+  const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, "your_jwt_secret", { expiresIn: "8h" });
 
   res.json({ message: "Login successful", token, user: { role: user.role } });
 } catch (err) {
@@ -210,7 +210,7 @@ try {
 }
 });
 
-app.post("/create", async (req, res) => {
+app.post("/create",  async (req, res) => {
 try {
   const { fullName, senderAddress, recipientAddress, senderPhone, recipientPhone, orderPrice } = req.body;
 
