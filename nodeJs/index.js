@@ -30,22 +30,30 @@ app.get("/user",  async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-    const decoded = jwt.verify(token, "your_jwt_secret");
+    const decoded = jwt.verify(token, "your_jwt_secret_key");
     const user = await UserModel.findById(decoded.id);
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json(user);
   } catch (error) {
+    console.error("Error in /user route:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });
 
-app.get("/users",  async (req, res) => {
+app.get("/users", async (req, res) => {
   try {
-    const users = await UserModel.find({ role: "user" }); 
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const loggedInUserId = decoded.id;
+
+    const users = await UserModel.find({ role: "user", masterAdmin: loggedInUserId });
     res.json(users);
   } catch (error) {
+    console.error("Error fetching users:", error);
     res.status(500).json({ message: "Error fetching users", error });
   }
 });
@@ -182,8 +190,13 @@ try {
   if (user.password !== password) { 
     return res.status(400).json({ message: 'Invalid password' });
   }
-
-  const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, "your_jwt_secret", { expiresIn: "8h" });
+  console.log("Signing token with secret:", process.env.JWT_SECRET);
+  
+  const token = jwt.sign(
+    { id: user._id, email: user.email, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "8h" }
+  );
 
   res.json({ message: "Login successful", token, user: { role: user.role } });
 } catch (err) {
@@ -191,24 +204,30 @@ try {
 }
 });
 
-app.post("/signup", async (req, res) => {
-try {
-  const { name, email, password, role } = req.body;
+const authenticate = require('./middlewares/authMiddleware');
 
-  const newUser = new UserModel({
-    name,
-    email,
-    password,
-    role,
-    status: role === "user" ? "unavailable" : undefined,
-  });
+app.post("/signup", authenticate, async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
 
-  await newUser.save();
-  res.json({ message: "User created successfully", user: newUser });
-} catch (err) {
-  res.status(500).json({ message: "Error creating user", error: err });
-}
+    const masterAdminId = req.user._id;
+
+    const newUser = new UserModel({
+      name,
+      email,
+      password,
+      role,
+      status: role === "user" ? "unavailable" : undefined,
+      masterAdmin: role === "user" ? masterAdminId : undefined,
+    });
+
+    await newUser.save();
+    res.json({ message: "User created successfully", user: newUser });
+  } catch (err) {
+    res.status(500).json({ message: "Error creating user", error: err });
+  }
 });
+
 
 app.post("/create",  async (req, res) => {
 try {

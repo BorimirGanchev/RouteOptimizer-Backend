@@ -54,41 +54,48 @@ exports.getAllOrders = async (req, res) => {
 exports.getOrdersForDelivery = async (req, res) => {
     try {
         const allOrders = await dataExtraction.getAllOrders();
+        console.log("Fetched all orders:", allOrders);
 
-        // Create a map of { orderId: senderAddress }
         const orderAddressMap = {};
         allOrders.forEach(order => {
             if (order.orderStatus === "for deployment") {
                 orderAddressMap[order._id] = order.senderAddress;
             }
         });
+        console.log("Order address map:", orderAddressMap);
 
         if (Object.keys(orderAddressMap).length === 0) {
             return res.status(400).json({ error: "No valid orders for deployment" });
         }
 
-        // Convert addresses to coordinates
         const orderCoordinatesMap = {};
         for (const [orderId, address] of Object.entries(orderAddressMap)) {
             const coords = await getCoordinates(address);
+            console.log(`Coordinates for ${address}:`, coords);
             if (coords) {
                 orderCoordinatesMap[orderId] = coords;
             }
         }
+        console.log("Order coordinates map:", orderCoordinatesMap);
 
         if (Object.keys(orderCoordinatesMap).length === 0) {
             return res.status(400).json({ error: "Failed to retrieve any valid coordinates" });
         }
 
-        // Send the map { orderId: coordinates } to Python
         const axiosResponse = await axios.post(
-            "http://kmeans-clustering:5000/process-orders",
-            orderCoordinatesMap
+            "http://localhost:5000/process-orders",
+            orderCoordinatesMap,
+            {
+                headers: {
+                    Authorization: req.headers.authorization, // Forward the token from the client request
+                },
+            }
         );
+        console.log("Response from K-Means service:", axiosResponse.data);
 
-        // Return the processed data from Python
         res.status(200).json(axiosResponse.data);
     } catch (error) {
+        console.error("Error in getOrdersForDelivery:", error.message);
         res.status(500).json({ error: error.message });
     }
 };

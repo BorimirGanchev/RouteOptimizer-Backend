@@ -5,13 +5,16 @@ from scipy.spatial.distance import cdist
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from flask_cors import CORS
+from bson import ObjectId
 import os
+import jwt 
 
 app = Flask(__name__)
 CORS(app)
 
 load_dotenv()
 mongo_uri = os.getenv("MONGODB_URI")
+jwt_secret = os.getenv("JWT_SECRET")
 client = MongoClient(mongo_uri)
 db = client.get_database()
 users_collection = db["Users"] 
@@ -19,6 +22,26 @@ users_collection = db["Users"]
 @app.route('/process-orders', methods=['POST'])
 def process_orders():
     try:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return jsonify({"error": "Unauthorized"}), 401
+
+        token = auth_header.split(" ")[1]
+        try:
+            decoded = jwt.decode(token, jwt_secret, algorithms=["HS256"])
+            logged_in_user_id = decoded.get("id")
+            logged_in_user_id = ObjectId(logged_in_user_id)
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token has expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        num_clusters = users_collection.count_documents({
+            "status": "available",
+            "masterAdmin": logged_in_user_id
+        })
+        num_clusters = max(num_clusters, 1)
+
         data = request.get_json()
 
         if not data:
@@ -36,9 +59,6 @@ def process_orders():
             return jsonify({"error": "Invalid locations format"}), 400
 
         office = np.array([[42.7000, 23.3200]])
-
-        num_clusters = users_collection.count_documents({"status": "available"})
-        num_clusters = max(num_clusters, 1)
 
         distances = cdist(locations, office, metric='euclidean').flatten()
 

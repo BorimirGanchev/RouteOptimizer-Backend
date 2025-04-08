@@ -1,22 +1,33 @@
-const jwt = require("jsonwebtoken");
+const jwt = require('jsonwebtoken');
+const UserModel = require('../databaseUsers/shemas/users');
 
-const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+const authenticate = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
 
+  const token = req.headers.authorization.split(" ")[1];
+  console.log("Token:", token);
+  
   try {
-    const decoded = jwt.verify(token, "your_jwt_secret"); 
+    console.log("Decoded Token ");
+    console.log("JWT_SECRET:", process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded Token 2");
+    console.log("Decoded Token:", decoded);
+    const user = await UserModel.findById(decoded.id);
+    console.log("user:", user); 
 
-    if (decoded.exp < Math.floor(Date.now() / 1000)) {
-      return res.status(401).json({ message: "Token expired. Please log in again." });
-    }
+    if (!user) return res.status(401).json({ message: 'User not found' });
 
-    req.user = decoded; 
+    req.user = user; 
     next();
-  } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+  } catch (err) {
+    console.error("JWT Verification Error:", err);
+    res.status(401).json({ message: 'Invalid token', error: err });
   }
 };
 
-module.exports = authMiddleware;
+module.exports = authenticate;
