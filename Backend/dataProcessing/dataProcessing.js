@@ -3,7 +3,7 @@ const axios = require('axios');
 require("dotenv").config();
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const API_HOST = process.env.API_HOST || "localhost";
+const API_HOST = process.env.API_HOST || "http://localhost:5000";
 
 const axiosInstance = axios.create({
     timeout: 10000,  
@@ -84,7 +84,7 @@ exports.getOrdersForDelivery = async (req, res) => {
         }
 
         const axiosResponse = await axios.post(
-            `http://${API_HOST}:5000/process-orders`,
+            `${API_HOST}/process-orders`,
             orderCoordinatesMap,
             {
                 headers: {
