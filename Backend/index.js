@@ -21,7 +21,7 @@ connectDB();
 
 app.use('/backend/orders', getOrders);
 
-app.get('/backend/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
