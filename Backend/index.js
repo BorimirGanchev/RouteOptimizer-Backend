@@ -21,6 +21,10 @@ connectDB();
 
 app.use('/orders', getOrders);
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get("/", (req, res) => {
   res.send("Welcome to the Route Optimizer Backend!");
 });
@@ -84,6 +88,21 @@ app.put("/users/:id/status",  async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Error updating user status", error });
   }
+});
+
+app.post('/users/location', async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const userId = decoded.id;
+  const { lat, lng } = req.body;
+
+  await UserModel.findByIdAndUpdate(userId, {
+    location: { lat, lng }
+  });
+
+  res.status(200).json({ message: "Location saved" });
 });
 
 app.get("/orders/:id",  async (req, res) => {
@@ -208,7 +227,13 @@ const authenticate = require('./middlewares/authMiddleware');
 
 app.post("/signup", authenticate, async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, lat, lng } = req.body;
+
+    console.log("Request body:", req.body);
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
     const masterAdminId = req.user._id;
 
@@ -219,15 +244,18 @@ app.post("/signup", authenticate, async (req, res) => {
       role,
       status: role === "user" ? "unavailable" : undefined,
       masterAdmin: role === "user" ? masterAdminId : undefined,
+      location: role === "user" && lat && lng ? { lat, lng } : undefined,
     });
+
+    console.log("New user object:", newUser);
 
     await newUser.save();
     res.json({ message: "User created successfully", user: newUser });
   } catch (err) {
-    res.status(500).json({ message: "Error creating user", error: err });
+    console.error("Error creating user:", err);
+    res.status(500).json({ message: "Error creating user", error: err.message });
   }
 });
-
 
 app.post("/create",  async (req, res) => {
 try {

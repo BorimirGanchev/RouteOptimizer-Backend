@@ -8,6 +8,10 @@ const userSchema = new mongoose.Schema({
     status: { type: String, enum: ["available", "unavailable"], default: "unavailable" }, // Status field added
     orders: [{ type: String }],
     masterAdmin: { type: mongoose.Schema.Types.ObjectId, ref: 'Users' },
+    location: {
+        lat: { type: Number, default: 0 }, // Default value
+        lng: { type: Number, default: 0 }  // Default value
+      }
 }, { collection: 'Users' });
 
 module.exports = mongoose.model('Users', userSchema);
