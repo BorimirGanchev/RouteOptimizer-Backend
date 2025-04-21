@@ -21,6 +21,10 @@ connectDB();
 
 app.use('/orders', getOrders);
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get("/", (req, res) => {
   res.send("Welcome to the Route Optimizer Backend!");
 });
