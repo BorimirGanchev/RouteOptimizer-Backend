@@ -19,9 +19,9 @@ app.listen(PORT, '0.0.0.0', () => {
 
 connectDB();
 
-app.use('/orders', getOrders);
+app.use('backend/orders', getOrders);
 
-app.get('/health', (req, res) => {
+app.get('backend/health', (req, res) => {
   res.status(200).send('OK');
 });
 
@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Route Optimizer Backend!");
 });
 
-app.get("/user",  async (req, res) => {
+app.get("backend/user",  async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ message: "Unauthorized" });
@@ -46,7 +46,7 @@ app.get("/user",  async (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
+app.get("backend/users", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ message: "Unauthorized" });
@@ -62,7 +62,7 @@ app.get("/users", async (req, res) => {
   }
 });
 
-app.get("/users/:id/orders",  async (req, res) => {
+app.get("backend/users/:id/orders",  async (req, res) => {
   try {
     const { id } = req.params;
     const user = await UserModel.findById(id);
@@ -79,7 +79,7 @@ app.get("/users/:id/orders",  async (req, res) => {
   }
 });
 
-app.put("/users/:id/status",  async (req, res) => {
+app.put("backend/users/:id/status",  async (req, res) => {
   try {
     const { status } = req.body;
     await UserModel.findByIdAndUpdate(req.params.id, { status });
@@ -90,7 +90,7 @@ app.put("/users/:id/status",  async (req, res) => {
   }
 });
 
-app.post('/users/location', async (req, res) => {
+app.post('backend/users/location', async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "Unauthorized" });
 
@@ -105,7 +105,7 @@ app.post('/users/location', async (req, res) => {
   res.status(200).json({ message: "Location saved" });
 });
 
-app.get("/orders/:id",  async (req, res) => {
+app.get("backend/orders/:id",  async (req, res) => {
   try {
     const { id } = req.params;
     const order = await OrderModel.findById(id);
@@ -121,7 +121,7 @@ app.get("/orders/:id",  async (req, res) => {
   }
 });
 
-app.put("/orders/:orderId",  async (req, res) => {
+app.put("backend/orders/:orderId",  async (req, res) => {
   try {
     const { orderId } = req.params;
     const { orderStatus } = req.body;
@@ -143,7 +143,7 @@ app.put("/orders/:orderId",  async (req, res) => {
   }
 });
 
-app.put("/user/:userId/removeOrder",  async (req, res) => {
+app.put("backend/user/:userId/removeOrder",  async (req, res) => {
   try {
     const { userId } = req.params;
     const { orderId } = req.body;
@@ -165,7 +165,7 @@ app.put("/user/:userId/removeOrder",  async (req, res) => {
   }
 });
 
-app.put("/users/:id/ordersasaign",  async (req, res) => {
+app.put("backend/users/:id/ordersasaign",  async (req, res) => {
   try {
     const { id } = req.params;
     const { orders } = req.body;
@@ -193,11 +193,11 @@ app.put("/users/:id/ordersasaign",  async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
+app.get('backend/', (req, res) => {
   res.send('Welcome to the Route Optimizer Backend!');
 });
 
-app.post('/login', async (req, res) => {
+app.post('backend/login', async (req, res) => {
 const { email, password } = req.body;
 try {
   const user = await UserModel.findOne({ email });
@@ -225,7 +225,7 @@ try {
 
 const authenticate = require('./middlewares/authMiddleware');
 
-app.post("/signup", authenticate, async (req, res) => {
+app.post("backend/signup", authenticate, async (req, res) => {
   try {
     const { name, email, password, role, lat, lng } = req.body;
 
@@ -257,7 +257,7 @@ app.post("/signup", authenticate, async (req, res) => {
   }
 });
 
-app.post("/create",  async (req, res) => {
+app.post("backend/create",  async (req, res) => {
 try {
   const { fullName, senderAddress, recipientAddress, senderPhone, recipientPhone, orderPrice } = req.body;
 
