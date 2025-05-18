@@ -7,6 +7,7 @@ const connectDB = require("./databaseOrders/dbConnection");
 const UserModel = require("./databaseUsers/shemas/users");
 const OrderModel = require("./databaseOrders/shemas/orderShema");
 const getOrders = require('./routes/orders');
+const mongoose = require('mongoose');
 
 const PORT = 8000;
 
@@ -200,7 +201,11 @@ app.get('/backend/', (req, res) => {
 app.post('/backend/login', async (req, res) => {
 const { email, password } = req.body;
 try {
+  console.log('Login attempt for email:', email);
+  console.log('MongoDB Connection State:', mongoose.connection.readyState);
+  
   const user = await UserModel.findOne({ email });
+  console.log('Database query completed. User found:', !!user);
 
   if (!user) {
     return res.status(404).json({ message: 'User not found' });
@@ -219,7 +224,9 @@ try {
 
   res.json({ message: "Login successful", token, user: { role: user.role } });
 } catch (err) {
-  res.status(500).json({ message: "Server error", error: err });
+  console.error("Login error:", err);
+  console.error("Error stack:", err.stack);
+  res.status(500).json({ message: "Server error", error: err.message });
 }
 });
 
