@@ -7,6 +7,7 @@ const DB_NAME = 'Route-Optimizer'; // Explicit database name
 async function connectDB() {
     try{
         await mongoose.connect(DBURI, {
+            authMechanism: 'SCRAM-SHA-1',
             retryWrites: false,
             directConnection: true,
             ssl: false,
