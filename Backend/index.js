@@ -11,7 +11,20 @@ const mongoose = require('mongoose');
 
 const PORT = 8000;
 
-app.use(cors());
+// Configure CORS to allow both CloudFront domains
+const corsOptions = {
+  origin: [
+    'https://dev.route-optimizer.innovatebulgaria.com',
+    'https://d1ernlx88weeds.cloudfront.net',
+    'https://d1u5zj2wbfdjrc.cloudfront.net'  // Your current CloudFront domain
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'access-control-request-headers'],
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.listen(PORT, '0.0.0.0', () => {
