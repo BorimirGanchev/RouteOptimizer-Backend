@@ -10,7 +10,7 @@ const getOrders = require('./routes/orders');
 const mongoose = require('mongoose');
 
 const PORT = 8000;
-
+const broken = ;
 // Configure CORS to allow both CloudFront domains
 const corsOptions = {
   origin: [
