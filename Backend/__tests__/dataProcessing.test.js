@@ -10,6 +10,7 @@ jest.mock('axios', () => ({
 const dataExtraction = require('../dataProcessing/dataExtraction');
 const axios = require('axios');
 const dataProcessing = require('../dataProcessing/dataProcessing');
+const axiosInstance = axios.create.mock.results[0].value;
 
 const createRes = () => {
   const res = {};
@@ -109,7 +110,6 @@ describe('dataProcessing handlers', () => {
       { _id: '1', orderStatus: 'for deployment', senderAddress: 'Sofia' }
     ]);
 
-    const axiosInstance = axios.create.mock.results[0].value;
     axiosInstance.get.mockResolvedValue({
       data: {
         status: 'OK',
