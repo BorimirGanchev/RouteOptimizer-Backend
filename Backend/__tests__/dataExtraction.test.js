@@ -23,6 +23,6 @@ describe('dataExtraction.getAllOrders', () => {
   test('хвърля стандартизирана грешка при проблем от базата', async () => {
     Order.find.mockRejectedValue(new Error('db failed'));
 
-    await expect(getAllOrders()).rejects.toThrow('Some other error');
+    await expect(getAllOrders()).rejects.toThrow('Failed to fetch orders');
   });
 });
