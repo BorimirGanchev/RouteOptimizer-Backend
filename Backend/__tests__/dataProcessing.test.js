@@ -125,4 +125,82 @@ describe('dataProcessing handlers', () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'service down' });
   });
+
+  test('getOrdersForDelivery връща 400 когато няма валидни координати', async () => {
+    dataExtraction.getAllOrders.mockResolvedValue([
+      { _id: '1', orderStatus: 'for deployment', senderAddress: 'Unknown city' }
+    ]);
+
+    axiosInstance.get.mockResolvedValue({
+      data: {
+        status: 'ZERO_RESULTS',
+        results: []
+      }
+    });
+
+    const res = createRes();
+    await dataProcessing.getOrdersForDelivery({ headers: { authorization: 'Bearer t' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to retrieve any valid coordinates' });
+  });
+
+  test('getOrdersForDelivery връща 200 при успешна обработка', async () => {
+    dataExtraction.getAllOrders.mockResolvedValue([
+      { _id: '1', orderStatus: 'for deployment', senderAddress: 'Sofia' }
+    ]);
+
+    axiosInstance.get.mockResolvedValue({
+      data: {
+        status: 'OK',
+        results: [{ geometry: { location: { lat: 42.7, lng: 23.3 } } }]
+      }
+    });
+    axios.post.mockResolvedValue({ data: { route: ['1'] } });
+
+    const res = createRes();
+    await dataProcessing.getOrdersForDelivery({ headers: { authorization: 'Bearer t' } }, res);
+
+    expect(axios.post).toHaveBeenCalledWith(
+      'http://localhost:5000/process-orders',
+      { '1': [42.7, 23.3] },
+      { headers: { Authorization: 'Bearer t' } }
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ route: ['1'] });
+  });
+
+  test('getOrdersForDelivery игнорира грешка при геокодиране и връща 400', async () => {
+    dataExtraction.getAllOrders.mockResolvedValue([
+      { _id: '1', orderStatus: 'for deployment', senderAddress: 'Broken address' }
+    ]);
+
+    axiosInstance.get.mockRejectedValue(new Error('maps down'));
+
+    const res = createRes();
+    await dataProcessing.getOrdersForDelivery({ headers: { authorization: 'Bearer t' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to retrieve any valid coordinates' });
+  });
+
+  test('getOrdersCanceled връща 500 при грешка', async () => {
+    dataExtraction.getAllOrders.mockRejectedValue(new Error('DB error'));
+
+    const res = createRes();
+    await dataProcessing.getOrdersCanceled({ params: { status: 'canceled' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'DB error' });
+  });
+
+  test('getOrdersPostponed връща 500 при грешка', async () => {
+    dataExtraction.getAllOrders.mockRejectedValue(new Error('DB error'));
+
+    const res = createRes();
+    await dataProcessing.getOrdersPostponed({ params: { status: 'posponed' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'DB error' });
+  });
 });

@@ -1,4 +1,4 @@
-const Order = require('../databaseOrders/shemas/index').Order; 
+const Order = require('../databaseOrders/shemas/index').Order;
 
 exports.getAllOrders = async () => {
     try {
