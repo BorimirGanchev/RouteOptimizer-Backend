@@ -49,7 +49,7 @@ app.get("/backend/user",  async (req, res) => {
     if (!token) return res.status(401).json({ message: "Unauthorized" });
 
     const decoded = jwt.verify(token, "your_jwt_secret_key");
-    const user = await UserModel.findById(decoded.id2);
+    const user = await UserModel.findById(decoded.id);
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
